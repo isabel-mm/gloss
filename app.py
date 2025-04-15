@@ -28,36 +28,24 @@ data = {
 df = pd.DataFrame(data)
 
 # ------------------------
-# ⚙️ Configuración
-# ------------------------
-st.set_page_config(page_title="Glosario Lingüística de Corpus", layout="wide")
-st.title("📘 Glosario Bilingüe de Lingüística de Corpus")
-
-# ------------------------
 # 🌍 Idioma
 # ------------------------
-idioma = st.radio("Selecciona el idioma de visualización:", ["Español", "Inglés"], horizontal=True)
+idioma = st.radio("Idioma de visualización:", ["Español", "Inglés"], horizontal=True)
 
 # ------------------------
-# 🔍 Filtros combinados
+# 🔍 Filtros
 # ------------------------
-busqueda = st.text_input("Buscar término (por texto):")
-
+busqueda = st.text_input("Buscar término:")
 letras = list(string.ascii_uppercase)
 letra_sel = st.selectbox("Filtrar por letra inicial:", ["Todas"] + letras)
-
 categorías_disponibles = sorted(df["tema"].unique())
 cat_sel = st.multiselect("Filtrar por categoría temática:", categorías_disponibles)
 
 # ------------------------
-# 🔍 Aplicar filtros
+# 📦 Aplicar filtros
 # ------------------------
-if idioma == "Español":
-    campo_term = "término_es"
-    campo_def = "definición_es"
-else:
-    campo_term = "término_en"
-    campo_def = "definición_en"
+campo_term = "término_es" if idioma == "Español" else "término_en"
+campo_def = "definición_es" if idioma == "Español" else "definición_en"
 
 df_filtrado = df.copy()
 
@@ -70,29 +58,34 @@ if busqueda:
 if cat_sel:
     df_filtrado = df_filtrado[df_filtrado["tema"].isin(cat_sel)]
 
-terminos_disponibles = df_filtrado[campo_term].tolist()
+# ------------------------
+# 🧭 Navegación con query params
+# ------------------------
+query_params = st.query_params
+termino_actual = query_params.get("termino", None)
 
 # ------------------------
-# 📘 Mostrar listado de términos y entrada terminológica
+# 📘 Mostrar entradas o listado de términos
 # ------------------------
-if terminos_disponibles:
-    st.success(f"{len(terminos_disponibles)} término(s) encontrado(s).")
-
-    termino_seleccionado = st.selectbox("Selecciona un término para ver su entrada:", terminos_disponibles)
-
-    entrada = df[df[campo_term] == termino_seleccionado].iloc[0]
-
-    st.markdown("### 📝 Entrada terminológica")
-
-    st.markdown(f"**Término:** {entrada[campo_term]}")
-    st.markdown(f"**Definición:** {entrada[campo_def]}")
-    st.markdown(f"**Categoría gramatical:** {entrada['categoría']}")
-    st.markdown(f"**Tema:** {entrada['tema']}")
+if termino_actual:
+    # Mostrar entrada terminológica
+    entrada = df[df[campo_term] == termino_actual]
+    if not entrada.empty:
+        row = entrada.iloc[0]
+        st.markdown(f"### 📝 Entrada terminológica: {row[campo_term]}")
+        st.markdown(f"**Definición:** {row[campo_def]}")
+        st.markdown(f"**Categoría gramatical:** {row['categoría']}")
+        st.markdown(f"**Tema:** {row['tema']}")
+        st.markdown("[🔙 Volver al glosario](?)")
+    else:
+        st.error("No se encontró el término.")
 else:
-    st.warning("No se encontraron términos con los filtros aplicados.")
+    st.success(f"{len(df_filtrado)} término(s) encontrado(s). Haz clic en uno para ver su entrada completa.")
+    for termino in sorted(df_filtrado[campo_term]):
+        st.markdown(f"- [{termino}](?termino={termino})")
 
 # ------------------------
 # 📌 Pie
 # ------------------------
 st.markdown("---")
-st.markdown("🧠 Desarrollado por Isa · Lingüística computacional · Proyecto *Glosario Corpus*")
+st.markdown("🧠 Desarrollado por Isabel Moyano |  Proyecto *en construcción*")
