@@ -3,7 +3,7 @@ import pandas as pd
 import string
 
 # ------------------------
-# 🔢 Datos simulados
+# 📚 Datos simulados
 # ------------------------
 data = {
     "término_es": ["concordancia", "frecuencia de tokens", "n-grama", "etiquetado POS", "collocación"],
@@ -23,9 +23,8 @@ data = {
         "A frequent combination of words appearing together more than expected."
     ],
     "categoría": ["búsqueda", "estadística", "frecuencia", "análisis morfosintáctico", "combinatoria"],
-    "tema": ["corpus", "estadística", "nlp", "nlp", "corpus"]  # Categorías temáticas
+    "tema": ["corpus", "estadística", "nlp", "nlp", "corpus"]
 }
-
 df = pd.DataFrame(data)
 
 # ------------------------
@@ -40,58 +39,57 @@ st.title("📘 Glosario Bilingüe de Lingüística de Corpus")
 idioma = st.radio("Selecciona el idioma de visualización:", ["Español", "Inglés"], horizontal=True)
 
 # ------------------------
-# 🔍 Filtro 1: búsqueda por texto
+# 🔍 Filtros combinados
 # ------------------------
-busqueda = st.text_input("Buscar término:")
+busqueda = st.text_input("Buscar término (por texto):")
 
-# ------------------------
-# 🔠 Filtro 2: letra inicial
-# ------------------------
 letras = list(string.ascii_uppercase)
-letra_sel = st.selectbox("Filtrar por letra inicial del término:", ["Todas"] + letras)
+letra_sel = st.selectbox("Filtrar por letra inicial:", ["Todas"] + letras)
 
-# ------------------------
-# 📂 Filtro 3: categoría temática
-# ------------------------
 categorías_disponibles = sorted(df["tema"].unique())
 cat_sel = st.multiselect("Filtrar por categoría temática:", categorías_disponibles)
 
 # ------------------------
-# 🧠 Función de filtrado
+# 🔍 Aplicar filtros
 # ------------------------
-def filtrar(df, idioma, busqueda, letra, categorias):
-    if idioma == "Español":
-        campo_term = "término_es"
-        campo_def = "definición_es"
-    else:
-        campo_term = "término_en"
-        campo_def = "definición_en"
-
-    df_filtrado = df.copy()
-
-    if letra != "Todas":
-        df_filtrado = df_filtrado[df_filtrado[campo_term].str.upper().str.startswith(letra)]
-
-    if busqueda:
-        df_filtrado = df_filtrado[df_filtrado[campo_term].str.contains(busqueda, case=False)]
-
-    if categorias:
-        df_filtrado = df_filtrado[df_filtrado["tema"].isin(categorias)]
-
-    return df_filtrado[[campo_term, campo_def, "categoría", "tema"]].rename(
-        columns={campo_term: "Término", campo_def: "Definición", "categoría": "Categoría", "tema": "Tema"}
-    )
-
-# ------------------------
-# 📋 Mostrar resultados
-# ------------------------
-resultado = filtrar(df, idioma, busqueda, letra_sel, cat_sel)
-
-if not resultado.empty:
-    st.success(f"{len(resultado)} término(s) encontrado(s).")
-    st.table(resultado)
+if idioma == "Español":
+    campo_term = "término_es"
+    campo_def = "definición_es"
 else:
-    st.warning("No se encontraron resultados con los filtros aplicados.")
+    campo_term = "término_en"
+    campo_def = "definición_en"
+
+df_filtrado = df.copy()
+
+if letra_sel != "Todas":
+    df_filtrado = df_filtrado[df_filtrado[campo_term].str.upper().str.startswith(letra_sel)]
+
+if busqueda:
+    df_filtrado = df_filtrado[df_filtrado[campo_term].str.contains(busqueda, case=False)]
+
+if cat_sel:
+    df_filtrado = df_filtrado[df_filtrado["tema"].isin(cat_sel)]
+
+terminos_disponibles = df_filtrado[campo_term].tolist()
+
+# ------------------------
+# 📘 Mostrar listado de términos y entrada terminológica
+# ------------------------
+if terminos_disponibles:
+    st.success(f"{len(terminos_disponibles)} término(s) encontrado(s).")
+
+    termino_seleccionado = st.selectbox("Selecciona un término para ver su entrada:", terminos_disponibles)
+
+    entrada = df[df[campo_term] == termino_seleccionado].iloc[0]
+
+    st.markdown("### 📝 Entrada terminológica")
+
+    st.markdown(f"**Término:** {entrada[campo_term]}")
+    st.markdown(f"**Definición:** {entrada[campo_def]}")
+    st.markdown(f"**Categoría gramatical:** {entrada['categoría']}")
+    st.markdown(f"**Tema:** {entrada['tema']}")
+else:
+    st.warning("No se encontraron términos con los filtros aplicados.")
 
 # ------------------------
 # 📌 Pie
